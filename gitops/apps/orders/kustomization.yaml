@@ -2,17 +2,17 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: orders
 resources:
-  - namespace.yaml
-  - orders-api.yaml
-  - orders-worker.yaml
-  - networkpolicies.yaml
-  - monitoring.yaml
-  - gateway.yaml
+- namespace.yaml
+- orders-api.yaml
+- orders-worker.yaml
+- networkpolicies.yaml
+- monitoring.yaml
+- gateway.yaml
 # CI replaces newTag with a digest (kustomize edit set image). The tag below is a placeholder until the first image build.
 images:
-  - name: orders-api
-    newName: australia-southeast1-docker.pkg.dev/gke-platform-demo-dce5/apps/orders-api
-    newTag: placeholder
-  - name: orders-worker
-    newName: australia-southeast1-docker.pkg.dev/gke-platform-demo-dce5/apps/orders-worker
-    newTag: placeholder
+- digest: sha256:6396fcf97b66eab614fd90d14b87959727bdbc1dadbc721512cb7bb8b3300b9a
+  name: orders-api
+  newName: australia-southeast1-docker.pkg.dev/gke-platform-demo-dce5/apps/orders-api
+- digest: sha256:bf19134c31946db8322a807a3b7205fda2b1c891291ccd1a4c970886be0a98bf
+  name: orders-worker
+  newName: australia-southeast1-docker.pkg.dev/gke-platform-demo-dce5/apps/orders-worker
