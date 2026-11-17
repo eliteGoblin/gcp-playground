@@ -10,6 +10,7 @@ configs:
     # TLS ends at the Google load balancer. The server speaks HTTP inside the cluster.
     server.insecure: true
   cm:
+    url: https://argocd.gke.frankbluemind.com
     # Health check for Argo Rollouts and other custom resources uses built-in rules.
     application.resourceTrackingMethod: annotation
     exec.enabled: false

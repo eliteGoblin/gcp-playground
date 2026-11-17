@@ -95,6 +95,17 @@ resource "google_compute_security_policy" "edge" {
   description = "Rate limit per client IP and a preconfigured WAF rule."
 
   rule {
+    description = "Block known exploit patterns, including Log4Shell (CVE-2021-44228)"
+    priority    = 900
+    action      = "deny(403)"
+    match {
+      expr {
+        expression = "evaluatePreconfiguredExpr('cve-canary')"
+      }
+    }
+  }
+
+  rule {
     description = "Block common SQL injection patterns (OWASP rule set, low sensitivity)"
     priority    = 1000
     action      = "deny(403)"

@@ -1,0 +1,52 @@
+# One shared public Gateway for the platform.
+# GKE turns it into a global external Application Load Balancer.
+#   - address:     static IP "demo-gateway" (Terraform, edge.tf)
+#   - certificate: Certificate Manager map "demo-certmap" (Terraform, edge.tf): wildcard, Google-managed
+#   - routes:      each team adds an HTTPRoute in its own namespace; external-dns creates the DNS record
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: gateway
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: external
+  namespace: gateway
+  annotations:
+    networking.gke.io/certmap: demo-certmap
+spec:
+  gatewayClassName: gke-l7-global-external-managed
+  addresses:
+    - type: NamedAddress
+      value: demo-gateway
+  listeners:
+    - name: https
+      protocol: HTTPS
+      port: 443
+      allowedRoutes:
+        namespaces:
+          from: All # demo. Production: from: Selector, with a label that the platform team sets on approved namespaces.
+    - name: http
+      protocol: HTTP
+      port: 80
+      allowedRoutes:
+        namespaces:
+          from: Same # only the redirect route below
+---
+# All plain HTTP requests are redirected to HTTPS.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: http-to-https
+  namespace: gateway
+spec:
+  parentRefs:
+    - name: external
+      sectionName: http
+  rules:
+    - filters:
+        - type: RequestRedirect
+          requestRedirect:
+            scheme: https
+            statusCode: 301

@@ -1,0 +1,100 @@
+# Public routes for the platform UIs.
+# Demo: login page on the internet behind Cloud Armor. Production: Identity-Aware Proxy or private access.
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: argocd
+  namespace: argocd
+spec:
+  parentRefs:
+    - name: external
+      namespace: gateway
+      sectionName: https
+  hostnames:
+    - argocd.gke.frankbluemind.com
+  rules:
+    - backendRefs:
+        - name: argocd-server
+          port: 80
+---
+apiVersion: networking.gke.io/v1
+kind: HealthCheckPolicy
+metadata:
+  name: argocd
+  namespace: argocd
+spec:
+  default:
+    config:
+      type: HTTP
+      httpHealthCheck:
+        portSpecification: USE_FIXED_PORT
+        port: 8080
+        requestPath: /healthz
+  targetRef:
+    group: ""
+    kind: Service
+    name: argocd-server
+---
+# Attaches the Cloud Armor policy "demo-edge" (Terraform, edge.tf) to this backend.
+apiVersion: networking.gke.io/v1
+kind: GCPBackendPolicy
+metadata:
+  name: argocd
+  namespace: argocd
+spec:
+  default:
+    securityPolicy: demo-edge
+  targetRef:
+    group: ""
+    kind: Service
+    name: argocd-server
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: grafana
+  namespace: observability
+spec:
+  parentRefs:
+    - name: external
+      namespace: gateway
+      sectionName: https
+  hostnames:
+    - grafana.gke.frankbluemind.com
+  rules:
+    - backendRefs:
+        - name: grafana
+          port: 80
+---
+apiVersion: networking.gke.io/v1
+kind: HealthCheckPolicy
+metadata:
+  name: grafana
+  namespace: observability
+spec:
+  default:
+    config:
+      type: HTTP
+      httpHealthCheck:
+        portSpecification: USE_FIXED_PORT
+        port: 3000
+        requestPath: /api/health
+  targetRef:
+    group: ""
+    kind: Service
+    name: grafana
+---
+# Attaches the Cloud Armor policy "demo-edge" (Terraform, edge.tf) to this backend.
+apiVersion: networking.gke.io/v1
+kind: GCPBackendPolicy
+metadata:
+  name: grafana
+  namespace: observability
+spec:
+  default:
+    securityPolicy: demo-edge
+  targetRef:
+    group: ""
+    kind: Service
+    name: grafana

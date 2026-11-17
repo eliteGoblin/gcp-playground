@@ -1,0 +1,47 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: external-dns
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://kubernetes-sigs.github.io/external-dns
+    chart: external-dns
+    targetRevision: 1.23.0
+    helm:
+      valuesObject:
+        # Creates a DNS record in Cloud DNS for each hostname on an HTTPRoute.
+        # Identity: Workload Identity Federation. Terraform grants roles/dns.admin
+        # to the Kubernetes service account external-dns/external-dns.
+        provider:
+          name: google
+        extraArgs:
+          - --google-project=gke-platform-demo-dce5
+        sources:
+          - gateway-httproute
+        domainFilters:
+          - gke.frankbluemind.com
+        policy: sync # also removes records when a route is deleted
+        registry: txt
+        txtOwnerId: gke-demo # external-dns only changes records that it created
+        serviceAccount:
+          name: external-dns
+        nodeSelector:
+          role: system
+        resources:
+          requests: { cpu: 10m, memory: 48Mi }
+          limits: { memory: 128Mi }
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: external-dns
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
