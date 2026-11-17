@@ -13,9 +13,13 @@ locals {
 
   # "<namespace>/<service account>" => project roles
   workload_project_roles = {
-    "keda/keda-operator"           = ["roles/monitoring.viewer"] # reads Pub/Sub backlog metrics
-    "observability/otel-collector" = ["roles/cloudtrace.agent"]
-    "observability/grafana"        = ["roles/monitoring.viewer"]
+    "keda/keda-operator" = ["roles/monitoring.viewer"] # reads Pub/Sub backlog metrics
+    # Kyverno reads cosign signatures from Artifact Registry to verify images.
+    "kyverno/kyverno-admission-controller"  = ["roles/artifactregistry.reader"]
+    "kyverno/kyverno-background-controller" = ["roles/artifactregistry.reader"]
+    "kyverno/kyverno-reports-controller"    = ["roles/artifactregistry.reader"]
+    "observability/otel-collector"          = ["roles/cloudtrace.agent"]
+    "observability/gmp-frontend"            = ["roles/monitoring.viewer"] # Grafana queries Managed Prometheus through this proxy
   }
 
   workload_project_bindings = merge([

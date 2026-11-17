@@ -1,0 +1,61 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: grafana
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://grafana.github.io/helm-charts
+    chart: grafana
+    targetRevision: 10.5.15
+    helm:
+      valuesObject:
+        nodeSelector:
+          role: system
+        resources:
+          requests: { cpu: 25m, memory: 128Mi }
+          limits: { memory: 384Mi }
+        persistence:
+          enabled: false # dashboards and data sources come from Git, so the Pod is stateless
+        datasources:
+          datasources.yaml:
+            apiVersion: 1
+            datasources:
+              - name: Managed Prometheus
+                type: prometheus
+                access: proxy
+                url: http://gmp-frontend.observability.svc:9090
+                isDefault: true
+        dashboardProviders:
+          dashboardproviders.yaml:
+            apiVersion: 1
+            providers:
+              - name: default
+                folder: Platform
+                type: file
+                options:
+                  path: /var/lib/grafana/dashboards/default
+        dashboards:
+          default:
+            kubernetes-cluster:
+              gnetId: 15757 # Kubernetes / Views / Global
+              revision: 43
+              datasource: Managed Prometheus
+            kubernetes-pods:
+              gnetId: 15760 # Kubernetes / Views / Pods
+              revision: 36
+              datasource: Managed Prometheus
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: observability
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true

@@ -1,0 +1,70 @@
+# Query frontend for Google Cloud Managed Service for Prometheus.
+# Managed Prometheus stores metrics in Cloud Monitoring. Grafana needs a normal
+# Prometheus HTTP API, and this small proxy provides it. It authenticates to
+# Cloud Monitoring with Workload Identity Federation: Terraform grants
+# roles/monitoring.viewer to the Kubernetes service account observability/gmp-frontend.
+# Based on GoogleCloudPlatform/prometheus-engine examples/frontend.yaml.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: gmp-frontend
+  namespace: observability
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gmp-frontend
+  namespace: observability
+spec:
+  replicas: 1 # demo size. Production: 2 replicas.
+  selector:
+    matchLabels:
+      app: gmp-frontend
+  template:
+    metadata:
+      labels:
+        app: gmp-frontend
+    spec:
+      serviceAccountName: gmp-frontend
+      nodeSelector:
+        role: system
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: frontend
+          image: gke.gcr.io/prometheus-engine/frontend:v0.15.3-gke.0
+          args:
+            - --web.listen-address=:9090
+            - --query.project-id=gke-platform-demo-dce5
+          ports:
+            - name: web
+              containerPort: 9090
+          readinessProbe:
+            httpGet: { path: /-/ready, port: web }
+          livenessProbe:
+            httpGet: { path: /-/healthy, port: web }
+          resources:
+            requests: { cpu: 25m, memory: 64Mi }
+            limits: { memory: 256Mi }
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gmp-frontend
+  namespace: observability
+spec:
+  selector:
+    app: gmp-frontend
+  ports:
+    - name: web
+      port: 9090
+      targetPort: web

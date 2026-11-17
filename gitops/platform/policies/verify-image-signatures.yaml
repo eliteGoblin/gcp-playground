@@ -1,0 +1,40 @@
+# Supply chain control: an application image runs only when the image pipeline
+# of this repository signed it (cosign keyless, GitHub OIDC identity, main branch).
+# An image that someone pushed by hand to the registry has no such signature
+# and is rejected at admission.
+apiVersion: policies.kyverno.io/v1
+kind: ImageValidatingPolicy
+metadata:
+  name: verify-image-signatures
+  annotations:
+    policies.kyverno.io/title: Verify image signatures
+    policies.kyverno.io/severity: high
+spec:
+  validationActions: [Deny]
+  matchConstraints:
+    namespaceSelector:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: In
+          values: [orders]
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: [v1]
+        operations: [CREATE, UPDATE]
+        resources: [pods]
+  matchImageReferences:
+    - glob: australia-southeast1-docker.pkg.dev/gke-platform-demo-dce5/apps/*
+  # Kyverno reads signatures from Artifact Registry with Workload Identity Federation.
+  credentials:
+    providers: [google]
+  attestors:
+    - name: github
+      cosign:
+        keyless:
+          identities:
+            - issuer: https://token.actions.githubusercontent.com
+              subject: https://github.com/eliteGoblin/gcp-playground/.github/workflows/app-image.yml@refs/heads/main
+  validations:
+    - expression: >-
+        images.containers.map(image, verifyImageSignatures(image, [attestors.github])).all(e, e > 0)
+      message: The image has no valid signature from the image pipeline of this repository.
