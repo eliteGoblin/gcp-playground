@@ -10,7 +10,7 @@ resources:
 - gateway.yaml
 # CI replaces newTag with a digest (kustomize edit set image). The tag below is a placeholder until the first image build.
 images:
-- digest: sha256:1760865ffb529c2443bdb161495f1ec723aa36c8de2b42ac9fe221d41e63a6e7
+- digest: sha256:6396fcf97b66eab614fd90d14b87959727bdbc1dadbc721512cb7bb8b3300b9a
   name: orders-api
   newName: australia-southeast1-docker.pkg.dev/gke-platform-demo-dce5/apps/orders-api
 - digest: sha256:bf19134c31946db8322a807a3b7205fda2b1c891291ccd1a4c970886be0a98bf
