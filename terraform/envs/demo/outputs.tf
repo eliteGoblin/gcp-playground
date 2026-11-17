@@ -22,3 +22,12 @@ output "get_credentials" {
 output "artifact_registry" {
   value = "${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.apps.repository_id}"
 }
+
+output "name_servers" {
+  description = "Set these name servers at the domain registrar."
+  value       = local.edge_enabled ? module.dns_zone[0].name_servers : []
+}
+
+output "gateway_address" {
+  value = local.edge_enabled ? google_compute_global_address.gateway[0].address : null
+}

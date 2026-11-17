@@ -17,3 +17,9 @@ variable "name" {
   type        = string
   default     = "demo"
 }
+
+variable "domain" {
+  description = "Public domain for the platform (for example example.dev). Null = no DNS zone, certificate, or public address."
+  type        = string
+  default     = null
+}
