@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: orders-worker
+spec:
+  # replicas is owned by KEDA (0 to 5)
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: orders-worker
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: orders-worker
+    spec:
+      serviceAccountName: orders-worker
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 30
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: orders-worker
+          image: orders-worker
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: GCP_PROJECT_ID
+              value: gke-platform-demo-dce5
+            - name: PUBSUB_SUBSCRIPTION
+              value: orders-worker
+          readinessProbe:
+            httpGet: {path: /healthz, port: http}
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: {path: /healthz, port: http}
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+            requests: {cpu: 100m, memory: 128Mi}
+            limits: {cpu: 500m, memory: 256Mi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            capabilities:
+              drop: [ALL]
+---
+# KEDA reads the backlog from Cloud Monitoring with the identity of the KEDA operator pod (podIdentity gcp).
+apiVersion: keda.sh/v1alpha1
+kind: TriggerAuthentication
+metadata:
+  name: orders-worker-gcp
+spec:
+  podIdentity:
+    provider: gcp
+---
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: orders-worker
+spec:
+  scaleTargetRef:
+    name: orders-worker
+  minReplicaCount: 0
+  maxReplicaCount: 5
+  triggers:
+    - type: gcp-pubsub
+      authenticationRef:
+        name: orders-worker-gcp
+      metadata:
+        subscriptionName: projects/gke-platform-demo-dce5/subscriptions/orders-worker
+        mode: SubscriptionSize
+        value: "10"
