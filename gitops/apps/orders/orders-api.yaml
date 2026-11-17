@@ -1,0 +1,100 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: orders-api
+spec:
+  # replicas is owned by the HPA
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: orders-api
+  strategy:
+    canary:
+      # No traffic router: the weight is approximated with replica counts.
+      steps:
+        - setWeight: 20
+        - pause: {duration: 60s}
+        - setWeight: 50
+        - pause: {duration: 60s}
+        - setWeight: 100
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: orders-api
+    spec:
+      serviceAccountName: orders-api
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: orders-api
+          image: orders-api
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: GCP_PROJECT_ID
+              value: gke-platform-demo-dce5
+            - name: PUBSUB_TOPIC
+              value: orders
+          readinessProbe:
+            httpGet: {path: /healthz, port: http}
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: {path: /healthz, port: http}
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+            requests: {cpu: 100m, memory: 128Mi}
+            limits: {cpu: 500m, memory: 256Mi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            capabilities:
+              drop: [ALL]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: orders-api
+spec:
+  selector:
+    app.kubernetes.io/name: orders-api
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: orders-api
+spec:
+  scaleTargetRef:
+    apiVersion: argoproj.io/v1alpha1
+    kind: Rollout
+    name: orders-api
+  minReplicas: 2
+  maxReplicas: 6
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: orders-api
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: orders-api
