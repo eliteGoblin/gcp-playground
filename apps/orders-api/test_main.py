@@ -24,6 +24,10 @@ def test_healthz():
     assert client.get("/healthz").json() == {"status": "ok"}
 
 
+def test_version():
+    assert client.get("/version").json() == {"version": "1.1.0"}
+
+
 def test_create_order_publishes_message(publisher):
     resp = client.post("/orders", json={"item": "book", "quantity": 2})
     assert resp.status_code == 202

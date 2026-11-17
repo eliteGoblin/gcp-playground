@@ -10,6 +10,8 @@ from google.cloud import pubsub_v1
 from prometheus_client import CONTENT_TYPE_LATEST, Counter, Histogram, generate_latest
 from pydantic import BaseModel, Field
 
+VERSION = "1.1.0"
+
 app = FastAPI(title="orders-api")
 
 REQUESTS = Counter("http_requests_total", "HTTP requests", ["method", "path", "status"])
@@ -48,6 +50,12 @@ async def record_metrics(request: Request, call_next: Callable) -> Response:
 @app.get("/healthz")
 def healthz() -> dict:
     return {"status": "ok"}
+
+
+@app.get("/version")
+def version() -> dict:
+    # Shows which release answers a request, for example during a canary.
+    return {"version": VERSION}
 
 
 @app.get("/metrics")
