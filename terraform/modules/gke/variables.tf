@@ -48,6 +48,15 @@ variable "system_pool" {
   default = {}
 }
 
+variable "batch_spot_pool" {
+  description = "Spot node pool for interruptible batch jobs. Tainted `dedicated=batch:NoSchedule`."
+  type = object({
+    machine_type = optional(string, "e2-standard-2")
+    max_per_zone = optional(number, 2)
+  })
+  default = {}
+}
+
 variable "deletion_protection" {
   description = "Set to true in production."
   type        = bool

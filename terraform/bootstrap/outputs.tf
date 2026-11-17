@@ -14,3 +14,7 @@ output "tf_plan_service_account" {
 output "tf_apply_service_account" {
   value = google_service_account.tf_apply.email
 }
+
+output "ci_images_service_account" {
+  value = google_service_account.ci_images.email
+}

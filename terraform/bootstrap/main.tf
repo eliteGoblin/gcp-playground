@@ -51,10 +51,6 @@ locals {
   ]
 }
 
-data "google_project" "this" {
-  project_id = var.project_id
-}
-
 resource "google_project_service" "this" {
   for_each = toset(local.services)
 
@@ -177,4 +173,25 @@ resource "google_storage_bucket_iam_member" "tfstate" {
   bucket = google_storage_bucket.tfstate.name
   role   = "roles/storage.objectUser"
   member = each.value
+}
+
+# ---------------------------------------------------------------------------
+# Image pipeline identity: push to Artifact Registry from the main branch only
+# ---------------------------------------------------------------------------
+resource "google_service_account" "ci_images" {
+  project      = var.project_id
+  account_id   = "ci-images"
+  display_name = "Image build pipeline (main branch only)"
+}
+
+resource "google_service_account_iam_member" "ci_images_wif" {
+  service_account_id = google_service_account.ci_images.name
+  role               = "roles/iam.workloadIdentityUser"
+  member             = "${local.wif_principal_prefix}/attribute.ref/refs/heads/main"
+}
+
+resource "google_project_iam_member" "ci_images" {
+  project = var.project_id
+  role    = "roles/artifactregistry.writer"
+  member  = google_service_account.ci_images.member
 }

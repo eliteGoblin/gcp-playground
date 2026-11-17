@@ -1,0 +1,11 @@
+# Each entry has a reason. Review this file when the GKE module version changes.
+
+# Node metadata: the GKE module sets workload_metadata_config to GKE_METADATA
+# (module input node_metadata, default "GKE_METADATA"). Trivy cannot resolve the
+# dynamic block. Verified on the live node pool.
+GCP-0057
+
+# Master authorized networks: the control plane IP endpoint is disabled
+# (ip_endpoints_enabled = false). Access is only through the DNS endpoint with IAM,
+# so there is no IP endpoint to restrict.
+GCP-0061

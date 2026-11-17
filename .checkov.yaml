@@ -1,0 +1,7 @@
+# Checkov configuration. Each skipped check has a reason.
+quiet: true
+compact: true
+download-external-modules: false
+skip-path:
+  - .terraform
+skip-check: []

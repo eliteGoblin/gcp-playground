@@ -112,11 +112,43 @@ module "cluster" {
       auto_upgrade       = true
       enable_secure_boot = true
     },
+    {
+      # Spot nodes for interruptible batch jobs. Google can reclaim a Spot node
+      # at any time with a short notice, so only Pods that tolerate the taint
+      # below run here. The pool scales to 0 when no batch Pod is waiting.
+      name               = "batch-spot"
+      machine_type       = var.batch_spot_pool.machine_type
+      autoscaling        = true
+      min_count          = 0
+      max_count          = var.batch_spot_pool.max_per_zone
+      initial_node_count = 0
+      spot               = true
+      location_policy    = "ANY" # take capacity in any zone; best for Spot availability
+      image_type         = "COS_CONTAINERD"
+      disk_type          = "pd-balanced"
+      disk_size_gb       = 50
+      auto_repair        = true
+      auto_upgrade       = true
+      enable_secure_boot = true
+    },
   ]
 
   node_pools_labels = {
-    all    = {}
-    system = { role = "system" }
+    all        = {}
+    system     = { role = "system" }
+    batch-spot = { role = "batch" }
+  }
+
+  node_pools_taints = {
+    all    = []
+    system = []
+    batch-spot = [
+      {
+        key    = "dedicated"
+        value  = "batch"
+        effect = "NO_SCHEDULE"
+      },
+    ]
   }
 
   depends_on = [google_kms_crypto_key_iam_member.gke_agent]
