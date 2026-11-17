@@ -99,6 +99,7 @@ resource "google_iam_workload_identity_pool" "github" {
 }
 
 resource "google_iam_workload_identity_pool_provider" "github" {
+  #checkov:skip=CKV_GCP_125:The check only accepts an exact match on assertion.sub, which allows one branch. This provider pins the repository owner and repository (the condition that Google documents for GitHub). The branch limit is on each service account binding (attribute.ref).
   project                            = var.project_id
   workload_identity_pool_id          = google_iam_workload_identity_pool.github.workload_identity_pool_id
   workload_identity_pool_provider_id = "github-oidc"
