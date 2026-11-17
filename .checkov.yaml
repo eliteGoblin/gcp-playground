@@ -1,7 +1,13 @@
-# Checkov configuration. Each skipped check has a reason.
+# Checkov configuration.
+# A skip for one resource is an inline comment on that resource, with the reason.
+# Only checks that do not apply to the whole repository are listed here.
 quiet: true
 compact: true
 download-external-modules: false
 skip-path:
   - .terraform
-skip-check: []
+skip-check:
+  # Module sources must use a commit hash. The modules come from the Terraform
+  # Registry with an exact version (for example 47.0.0), which cannot carry a hash.
+  # Version updates go through a pull request and the plan.
+  - CKV_TF_1

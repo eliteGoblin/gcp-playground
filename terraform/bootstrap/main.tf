@@ -63,6 +63,7 @@ resource "google_project_service" "this" {
 # Terraform state
 # ---------------------------------------------------------------------------
 resource "google_storage_bucket" "tfstate" {
+  #checkov:skip=CKV_GCP_62:Legacy bucket access logs are not used. Access is recorded by Cloud Audit Logs (enterprise: enable Data Access logs for storage.googleapis.com).
   name     = "${var.project_id}-tfstate"
   project  = var.project_id
   location = var.region
@@ -110,7 +111,7 @@ resource "google_iam_workload_identity_pool_provider" "github" {
   }
 
   # Tokens from any other repository are rejected at the provider.
-  attribute_condition = "assertion.repository == \"${var.github_repo}\""
+  attribute_condition = "assertion.repository_owner == \"${split("/", var.github_repo)[0]}\" && assertion.repository == \"${var.github_repo}\""
 
   oidc {
     issuer_uri = "https://token.actions.githubusercontent.com"
@@ -135,6 +136,7 @@ resource "google_service_account_iam_member" "tf_plan_wif" {
 }
 
 resource "google_project_iam_member" "tf_plan" {
+  #checkov:skip=CKV_GCP_117:The plan identity needs read access to every managed service. roles/viewer is read-only. Enterprise option: a custom role with only the get and list permissions that the plan uses.
   for_each = toset(local.plan_roles)
 
   project = var.project_id
@@ -156,6 +158,8 @@ resource "google_service_account_iam_member" "tf_apply_wif" {
 }
 
 resource "google_project_iam_member" "tf_apply" {
+  #checkov:skip=CKV_GCP_49:Terraform creates the node service account and workload service accounts, so the apply identity must manage service accounts. Only the main branch can use this identity.
+  #checkov:skip=CKV_GCP_41:Terraform attaches the node service account to node pools, which needs serviceAccountUser. Enterprise option: grant it on the single node service account, not on the project.
   for_each = toset(local.apply_roles)
 
   project = var.project_id

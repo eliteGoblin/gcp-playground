@@ -1,0 +1,49 @@
+# Helm values for Argo CD. Used twice: by the first manual `helm install`
+# (scripts/bootstrap-argocd.sh) and by the Argo CD Application that manages
+# Argo CD itself afterwards.
+global:
+  nodeSelector:
+    role: system
+
+configs:
+  params:
+    # TLS ends at the Google load balancer. The server speaks HTTP inside the cluster.
+    server.insecure: true
+  cm:
+    # Health check for Argo Rollouts and other custom resources uses built-in rules.
+    application.resourceTrackingMethod: annotation
+    exec.enabled: false
+    admin.enabled: true # demo only. Production: disable and use SSO (OIDC) with groups.
+  rbac:
+    policy.default: role:readonly
+
+dex:
+  enabled: false # no SSO in the demo
+
+notifications:
+  enabled: false
+
+applicationSet:
+  replicas: 1
+
+controller:
+  resources:
+    requests: { cpu: 100m, memory: 384Mi }
+    limits: { memory: 1Gi }
+  metrics:
+    enabled: true
+
+repoServer:
+  resources:
+    requests: { cpu: 50m, memory: 128Mi }
+    limits: { memory: 512Mi }
+
+server:
+  resources:
+    requests: { cpu: 25m, memory: 96Mi }
+    limits: { memory: 256Mi }
+
+redis:
+  resources:
+    requests: { cpu: 25m, memory: 64Mi }
+    limits: { memory: 128Mi }

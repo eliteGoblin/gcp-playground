@@ -1,0 +1,29 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: argocd
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  project: default
+  sources:
+    - repoURL: https://argoproj.github.io/argo-helm
+      chart: argo-cd
+      targetRevision: 10.18.0
+      helm:
+        releaseName: argocd
+        valueFiles:
+          - $values/gitops/bootstrap/argocd-values.yaml
+    - repoURL: https://github.com/eliteGoblin/gcp-playground.git
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: false # never let Argo CD prune its own components
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true

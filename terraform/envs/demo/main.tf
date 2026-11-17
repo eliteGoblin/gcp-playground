@@ -23,6 +23,7 @@ module "gke" {
 }
 
 resource "google_artifact_registry_repository" "apps" {
+  #checkov:skip=CKV_GCP_84:Google-managed encryption at rest is used. Customer-managed keys are an enterprise option (docs/enterprise-upgrades.md).
   project       = var.project_id
   location      = var.region
   repository_id = "apps"

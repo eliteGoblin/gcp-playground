@@ -16,8 +16,10 @@ resource "google_kms_crypto_key" "secrets" {
   key_ring        = google_kms_key_ring.gke.id
   rotation_period = "7776000s" # 90 days
 
+  # A destroyed key makes every Kubernetes Secret in the cluster unreadable.
+  # Teardown of the demo: remove this resource from state first (scripts/teardown.sh).
   lifecycle {
-    prevent_destroy = false
+    prevent_destroy = true
   }
 }
 

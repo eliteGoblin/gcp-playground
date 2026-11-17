@@ -1,0 +1,29 @@
+# ComputeClass is the GKE-native way to say which nodes a workload gets.
+# It is the GKE equivalent of a Karpenter NodePool.
+#
+# spot-first: stateless services. GKE creates Spot nodes first. When no Spot
+# capacity exists, it creates on-demand nodes, and moves Pods back to Spot later
+# (activeMigration). A namespace opts in with the label
+#   cloud.google.com/default-compute-class: spot-first
+apiVersion: cloud.google.com/v1
+kind: ComputeClass
+metadata:
+  name: spot-first
+spec:
+  priorities:
+    - machineFamily: e2
+      spot: true
+    - machineFamily: n2d
+      spot: true
+    - machineFamily: e2
+      spot: false
+  nodePoolAutoCreation:
+    enabled: true
+  nodePoolConfig:
+    # Node service account created by Terraform (minimum roles). Without this line,
+    # auto-created node pools use the Compute Engine default service account.
+    serviceAccount: tf-gke-demo-le30@gke-platform-demo-dce5.iam.gserviceaccount.com
+    imageType: cos_containerd
+  activeMigration:
+    optimizeRulePriority: true
+  whenUnsatisfiable: DoNotScaleUp

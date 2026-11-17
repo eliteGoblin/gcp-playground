@@ -38,11 +38,13 @@ resource "google_project_iam_member" "workload" {
 
 # --- Demo app: orders ---------------------------------------------------------
 resource "google_pubsub_topic" "orders" {
+  #checkov:skip=CKV_GCP_83:Google-managed encryption at rest is used. Customer-managed keys are an enterprise option (docs/enterprise-upgrades.md).
   project = var.project_id
   name    = "orders"
 }
 
 resource "google_pubsub_topic" "orders_dead_letter" {
+  #checkov:skip=CKV_GCP_83:Google-managed encryption at rest is used. Customer-managed keys are an enterprise option (docs/enterprise-upgrades.md).
   project = var.project_id
   name    = "orders-dead-letter"
 }

@@ -1,0 +1,66 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kyverno
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://kyverno.github.io/kyverno
+    chart: kyverno
+    targetRevision: 3.10.0
+    helm:
+      valuesObject:
+        global:
+          nodeSelector:
+            role: system
+        admissionController:
+          replicas: 1 # demo size. Production: 3 replicas across zones.
+          container:
+            resources:
+              requests: { cpu: 50m, memory: 128Mi }
+              limits: { memory: 384Mi }
+        backgroundController:
+          resources:
+            requests: { cpu: 25m, memory: 64Mi }
+            limits: { memory: 256Mi }
+        cleanupController:
+          enabled: false
+        reportsController:
+          resources:
+            requests: { cpu: 25m, memory: 64Mi }
+            limits: { memory: 256Mi }
+        config:
+          # Never block GKE system namespaces: a broken policy must not stop the cluster.
+          webhooks:
+            namespaceSelector:
+              matchExpressions:
+                - key: kubernetes.io/metadata.name
+                  operator: NotIn
+                  values:
+                    - kube-system
+                    - kube-node-lease
+                    - kube-public
+                    - gke-managed-system
+                    - gke-managed-cim
+                    - gke-managed-filestorecsi
+                    - gke-managed-volumepopulator
+                    - gke-gmp-system
+                    - gmp-system
+                    - gmp-public
+                    - kyverno
+                    - argocd
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kyverno
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
