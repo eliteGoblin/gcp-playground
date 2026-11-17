@@ -15,6 +15,9 @@ configs:
     application.resourceTrackingMethod: annotation
     exec.enabled: false
     admin.enabled: true # demo only. Production: disable and use SSO (OIDC) with groups.
+    # Read-only local account for people who view the demo. The password is set
+    # outside Git (scripts/set-argocd-demo-password.sh). RBAC default is role:readonly.
+    accounts.demo: login
   rbac:
     policy.default: role:readonly
 
