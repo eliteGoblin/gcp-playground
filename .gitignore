@@ -6,3 +6,4 @@ output/
 crash.log
 .DS_Store
 .claude/worktrees/
+__pycache__/
