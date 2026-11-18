@@ -25,7 +25,7 @@ def test_healthz():
 
 
 def test_version():
-    assert client.get("/version").json() == {"version": "1.1.0"}
+    assert client.get("/version").json() == {"version": "1.2.0"}
 
 
 def test_create_order_publishes_message(publisher):
@@ -46,6 +46,31 @@ def test_invalid_order_is_rejected_and_not_published(publisher):
 def test_publish_failure_returns_503(publisher):
     publisher.publish.return_value.result.side_effect = RuntimeError("boom")
     assert client.post("/orders", json={"item": "book", "quantity": 1}).status_code == 503
+
+
+def test_order_is_accepted_when_inventory_has_stock(publisher, monkeypatch):
+    monkeypatch.setattr(main, "check_stock", lambda item: 5)
+    assert client.post("/orders", json={"item": "book", "quantity": 5}).status_code == 202
+
+
+def test_order_is_rejected_when_stock_is_too_low(publisher, monkeypatch):
+    monkeypatch.setattr(main, "check_stock", lambda item: 1)
+    assert client.post("/orders", json={"item": "book", "quantity": 2}).status_code == 409
+    publisher.publish.assert_not_called()
+
+
+def test_inventory_failure_returns_503(publisher, monkeypatch):
+    def fail(item):
+        raise OSError("connection refused")
+
+    monkeypatch.setattr(main, "check_stock", fail)
+    assert client.post("/orders", json={"item": "book", "quantity": 1}).status_code == 503
+    publisher.publish.assert_not_called()
+
+
+def test_check_stock_is_skipped_without_inventory_url(monkeypatch):
+    monkeypatch.delenv("INVENTORY_URL", raising=False)
+    assert main.check_stock("book") is None
 
 
 def test_metrics_counts_requests():

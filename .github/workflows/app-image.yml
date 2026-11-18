@@ -28,7 +28,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        service: [orders-api, orders-worker]
+        service: [orders-api, orders-worker, inventory-api]
     defaults:
       run:
         working-directory: apps/${{ matrix.service }}
@@ -116,7 +116,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        service: [orders-api, orders-worker]
+        service: [orders-api, orders-worker, inventory-api]
     env:
       IMAGE: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/apps/${{ matrix.service }}
     steps:
@@ -208,7 +208,7 @@ jobs:
       - name: Set new digests and commit
         working-directory: gitops/apps/orders
         run: |
-          for svc in orders-api orders-worker; do
+          for svc in orders-api orders-worker inventory-api; do
             ../../../kustomize edit set image "${svc}=$(cat ../../../digest-${svc}.txt)"
           done
           git config user.name "github-actions[bot]"
