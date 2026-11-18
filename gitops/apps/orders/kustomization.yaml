@@ -5,6 +5,7 @@ resources:
 - namespace.yaml
 - orders-api.yaml
 - orders-worker.yaml
+- inventory-api.yaml
 - networkpolicies.yaml
 - monitoring.yaml
 - gateway.yaml

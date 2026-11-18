@@ -23,3 +23,16 @@ spec:
     - port: http
       path: /metrics
       interval: 30s
+---
+apiVersion: monitoring.googleapis.com/v1
+kind: PodMonitoring
+metadata:
+  name: inventory-api
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: inventory-api
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 30s

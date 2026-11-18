@@ -1,0 +1,72 @@
+# Internal service: no HTTPRoute, so no path from the internet.
+# Callers send a Kubernetes ServiceAccount token (JWT) for the audience "inventory-api".
+# The service validates the token against the cluster's public keys and allows only ALLOWED_CALLERS.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: inventory-api
+automountServiceAccountToken: false
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: inventory-api
+spec:
+  replicas: 2
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: inventory-api
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: inventory-api
+    spec:
+      serviceAccountName: inventory-api
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: inventory-api
+          image: inventory-api
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            # Issuer of the cluster's ServiceAccount tokens. Its public keys are at <issuer>/jwks.
+            - name: TOKEN_ISSUER
+              value: https://container.googleapis.com/v1/projects/gke-platform-demo-dce5/locations/australia-southeast1/clusters/demo
+            - name: ALLOWED_CALLERS
+              value: system:serviceaccount:orders:orders-api
+          readinessProbe:
+            httpGet: {path: /healthz, port: http}
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: {path: /healthz, port: http}
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+            requests: {cpu: 50m, memory: 96Mi}
+            limits: {cpu: 250m, memory: 192Mi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            capabilities:
+              drop: [ALL]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: inventory-api
+spec:
+  selector:
+    app.kubernetes.io/name: inventory-api
+  ports:
+    - name: http
+      port: 80
+      targetPort: http

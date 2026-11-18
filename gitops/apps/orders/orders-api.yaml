@@ -41,6 +41,12 @@ spec:
               value: gke-platform-demo-dce5
             - name: PUBSUB_TOPIC
               value: orders
+            - name: INVENTORY_URL
+              value: http://inventory-api
+          volumeMounts:
+            - name: inventory-token
+              mountPath: /var/run/secrets/tokens
+              readOnly: true
           readinessProbe:
             httpGet: {path: /healthz, port: http}
             periodSeconds: 5
@@ -57,6 +63,15 @@ spec:
             runAsNonRoot: true
             capabilities:
               drop: [ALL]
+      volumes:
+        # Short-life token that is valid only for inventory-api. The kubelet renews it.
+        - name: inventory-token
+          projected:
+            sources:
+              - serviceAccountToken:
+                  audience: inventory-api
+                  expirationSeconds: 600
+                  path: inventory-api
 ---
 apiVersion: v1
 kind: Service

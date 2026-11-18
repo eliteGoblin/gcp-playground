@@ -37,7 +37,7 @@ flowchart LR
 | `gitops/bootstrap` | Argo CD values and the root application (app of apps). |
 | `gitops/platform` | One Argo CD application per platform component, plus policies, ComputeClass, Gateway, and the batch example. |
 | `gitops/apps/orders` | The demo application manifests. |
-| `apps/` | Two Python services: `orders-api` (HTTP, publishes to Pub/Sub) and `orders-worker` (consumes). |
+| `apps/` | Three Python services: `orders-api` (HTTP, publishes to Pub/Sub), `orders-worker` (consumes), and `inventory-api` (internal, called by `orders-api`). |
 | `scripts/` | Bootstrap, delegation, teardown (Bash) and a cluster health report (Python). |
 | `docs/` | Design, enterprise upgrade options, pipeline, and operations notes. |
 
@@ -51,6 +51,7 @@ flowchart LR
 | Node scaling | Custom ComputeClass `spot-first` with node pool auto-creation; a tainted `batch-spot` pool for jobs | GKE-native equivalent of Karpenter; Spot first, on-demand when Spot is not available |
 | Pod scaling | HPA for the API, KEDA on Pub/Sub backlog for the worker (scales to 0) | Scale on the signal that matches the workload |
 | Identity | Workload Identity Federation for Pods and for GitHub Actions | No service account keys exist |
+| Service-to-service calls | The caller sends a Kubernetes ServiceAccount token (projected volume, audience `inventory-api`, 10 minutes). The target validates it against the cluster's public keys and allows only named callers. NetworkPolicy allows only that path | No stored secret and no identity provider to run. Not built: TLS between Pods (needs a service mesh or cert-manager) |
 | Ingress | Gateway API, global load balancer, Certificate Manager wildcard certificate (DNS authorization), Cloud Armor | Current Google recommendation; certificate renews automatically |
 | DNS | Subdomain delegated from Cloudflare to Cloud DNS; external-dns writes records from routes | No manual records; the parent domain is not touched |
 | Delivery | GitOps: the pipeline never runs `kubectl`. It commits an image digest; Argo CD pulls it | The cluster needs no inbound access from CI; Git is the audit log |
